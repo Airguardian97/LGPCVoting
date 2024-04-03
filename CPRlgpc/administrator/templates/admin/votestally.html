@@ -1,0 +1,170 @@
+{% extends 'root.html' %}
+{% block content %}
+<section class="content">
+  <div class="row">
+<div class="col-xs-12">
+<div class="box">
+  {% comment %} <div class="box-header with-border">
+    <a href="#reset" data-toggle="modal" class="btn btn-danger btn-sm btn-flat"><i class="fa fa-refresh"></i> Reset</a>
+  </div> {% endcomment %}
+  <div class="box-header with-border">
+    <!-- Add a button to trigger printing -->
+    
+    <button onclick="printTable()" class="btn btn-primary btn-sm btn-flat"><i class="fa fa-print"></i> Print Table</button>
+    </div>
+<div class="box-body">
+  <table id="example1" class="table table-bordered table-hover table-striped">
+      <thead style="background-color: #222D32; color:white;">
+        <tr>
+          
+          {% for col in table1.columns %}
+            <td>
+              {{col}}
+            </td>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for index, row in table1.iterrows %}
+
+        {% comment %} <tr>{{index}} {% endcomment %}
+          
+          {% for cell in row %}
+            <td>
+              {{cell}}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}  
+
+       </tbody>
+  </table>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+{% endblock content %}
+
+{% block modal %}
+<!-- Reset -->
+<div class="modal fade" id="reset">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title"><b>Reseting...</b></h4>
+          </div>
+          <div class="modal-body">
+            <div class="text-center">
+                <p>RESET VOTES</p>
+                <h4>This will delete all votes.</h4>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-flat pull-left" data-dismiss="modal"><i class="fa fa-close"></i> Close</button>
+            <a href="{% url 'resetVote' %}" class="btn btn-danger btn-flat"><i class="fa fa-refresh"></i> Reset</a>
+          </div>
+      </div>
+  </div>
+</div>
+{% endblock modal %}
+
+
+
+{% block custom_js %}
+  
+<script>
+  $(function() {
+      $(document).on('click', '.edit', function(e) {
+          e.preventDefault();
+          $('#edit').modal('show');
+          var id = $(this).data('id');
+          getRow(id);
+      });
+
+      $(document).on('click', '.delete', function(e) {
+          e.preventDefault();
+          $('#delete').modal('show');
+          var id = $(this).data('id');
+          getRow(id);
+      });
+
+
+  });
+
+  function getRow(id) {
+      $.ajax({
+          type: 'GET',
+          url: '{% url "viewCandidate" %}',
+          data: {
+              id: id
+          },
+          dataType: 'json',
+          success: function(response) {
+            $('.id').val(id),
+              $('.display_form').html(response.form);
+              $('.fullname').html(response.fullname);
+          },
+         
+      });
+  }
+
+
+
+  function printTable() {
+    var printContent = ''; // Initialize variable to store combined HTML content
+    var table = $('.table').DataTable(); // Get the DataTable instance
+
+    // Get information about the pagination state
+    var pageInfo = table.page.info();
+    var totalPages = pageInfo.pages;
+
+    
+    // Include table head
+    var tableHeadHTML = $('.table thead').prop('outerHTML');
+    printContent += tableHeadHTML;
+
+    // Iterate through each page of the table
+    for (var i = 0; i < totalPages; i++) {
+        table.page(i).draw('page'); // Go to page i
+        var pageHTML = ''; // Initialize variable to store HTML content of each page
+        // Fetch HTML content of current page, excluding the action column
+        $('.table tbody tr').each(function() {
+          var rowHTML = $(this).prop('outerHTML'); // Get outer HTML of the row
+          pageHTML += rowHTML; // Append each row to pageHTML
+        });
+        printContent += pageHTML; // Append pageHTML to printContent
+    }
+
+    // Open a new window with the combined HTML content for printing
+    var printWindow = window.open('', '', 'width=800, height=600');
+    printWindow.document.write('<html><head><title>Print Table</title>');
+    printWindow.document.write('<style>');
+    //printWindow.document.write('table { border-collapse: collapse; width: 100%; }');
+      // Adjust the width of the first column
+    printWindow.document.write('.table tbody td:first-child, .table thead th:first-child { width: 500px; }'); // Adjust the width as needed
+  
+    printWindow.document.write('th, td { border: 1px solid #dddddd; text-align: left; padding: 8px;  }');
+    printWindow.document.write('tr:nth-child(even) { background-color: #f2f2f2; }');
+    printWindow.document.write('h1 {text-align: center;');
+    printWindow.document.write('</style>');
+    printWindow.document.write('</head><body>');      
+    printWindow.document.write('<h1>{{ PosName }}</h1>');
+    printWindow.document.write('<table>');
+
+
+
+    printWindow.document.write(printContent); // Write combined HTML content to new window
+    printWindow.document.write('</table></body></html>');
+    printWindow.document.close();
+
+    // Print the content
+    printWindow.print();
+}
+
+  </script>
+{% endblock custom_js %}
+  
